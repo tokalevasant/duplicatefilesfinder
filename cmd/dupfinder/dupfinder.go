@@ -24,8 +24,7 @@ type fileDetails struct {
 
 func FindDuplicateFiles(path string) []DuplicateFiles {
 
-	var files []fileDetails
-	listFilesInDir(path, files)
+	  files  := listFilesInDir(path)
 
 	fileMap := make(map[string][]fileDetails)
 
@@ -59,20 +58,19 @@ func computeFileDuplicates(fileMap map[string][]fileDetails) []DuplicateFiles {
 	return duplicateFiles
 }
 
-func listFilesInDir(path string, files []fileDetails) {
+func listFilesInDir(path string)   []fileDetails {
+	files := []fileDetails{}
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		panic(err)
 	}
 
 	for _, e := range entries {
-		fp, err := filepath.Abs(e.Name())
-		if err != nil {
-			panic(err)
-		}
+		fp := filepath.Join(path, e.Name())
 
 		if e.IsDir() {
-			listFilesInDir(fp, files)
+			f :=listFilesInDir(fp, )
+			files = append(files, f... )
 		}
 		if e.Type().IsRegular() {
 			fi, err := os.Stat(fp)
@@ -84,7 +82,7 @@ func listFilesInDir(path string, files []fileDetails) {
 			files = append(files, fd)
 		}
 	}
-
+	return files
 }
 
 func FileSha256Checksum(file string) string {
