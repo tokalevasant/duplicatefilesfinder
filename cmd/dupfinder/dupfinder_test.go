@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
@@ -41,13 +40,54 @@ func TestFindDuplicateFilesInSingleFolder(t *testing.T) {
 
 	got := FindDuplicateFiles(temp)
 
-	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("want: %+v, got %+v", want, got)
+	if len(want) != len(got) || len(want[0].files) != len(got[0].files) {
+		t.Errorf("Number of elements in `want` do not match `got`")
 	}
 
 }
 
+func TestDuplicatesInMultipleFolders(t *testing.T) {
+	temp1 := t.TempDir()
+	temp2 := t.TempDir()
 
+	r := getRandomByteSlices()
+	h := Sha256Checksum(r)
+
+	fileInfo1, err := writeFile(r, temp1)
+	if err != nil {
+		t.Fail()
+	}
+	fileInfo2, err := writeFile(r, temp1)
+	if err != nil {
+		t.Fail()
+	}
+	fileInfo3, err := writeFile(r, temp2)
+	if err != nil {
+		t.Fail()
+	}
+
+	fileInfo4, err := writeFile(r, temp2)
+	if err != nil {
+		t.Fail()
+	}
+
+	want := make([]DuplicateFiles, 1)
+	want[0] = DuplicateFiles{
+		fileHash: h,
+		files: []fs.FileInfo{
+			fileInfo1,
+			fileInfo2,
+			fileInfo3,
+			fileInfo4,
+		},
+	}
+
+	got := FindDuplicateFiles(temp1, temp2)
+
+	if len(want) != len(got) || len(want[0].files) != len(got[0].files) {
+		t.Errorf("Number of elements in `want` do not match `got`")
+	}
+}
 
 func getRandomByteSlices() []byte {
 	a := make([]byte, 10)

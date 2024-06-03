@@ -4,12 +4,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io/fs"
-	"log/slog"
 	"os"
 	"path/filepath"
 )
-
-var logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 type DuplicateFiles struct {
 	fileHash string
@@ -22,16 +19,18 @@ type fileDetails struct {
 	fileInfo os.FileInfo
 }
 
-func FindDuplicateFiles(path string) []DuplicateFiles {
+func FindDuplicateFiles(paths ...string) []DuplicateFiles {
 
-	  files  := listFilesInDir(path)
-
+	var files []fileDetails
+	for _, p := range paths {
+		files = append(files, listFilesInDir(p)...)
+	}
 	fileMap := make(map[string][]fileDetails)
 
 	for _, fi := range files {
 		val, ok := fileMap[fi.fileHash]
 		if !ok {
-			val = make([]fileDetails, 1)
+			val = make([]fileDetails, 0)
 		}
 		val = append(val, fi)
 		fileMap[fi.fileHash] = val
@@ -42,10 +41,10 @@ func FindDuplicateFiles(path string) []DuplicateFiles {
 
 func computeFileDuplicates(fileMap map[string][]fileDetails) []DuplicateFiles {
 	duplicateFiles := []DuplicateFiles{}
-	for sum, fd := range fileMap{
-		if len(fd) > 1{
+	for sum, fd := range fileMap {
+		if len(fd) > 1 {
 			fis := []fs.FileInfo{}
-			for _, f := range fd{
+			for _, f := range fd {
 				fis = append(fis, f.fileInfo)
 			}
 			dup := DuplicateFiles{
@@ -58,7 +57,7 @@ func computeFileDuplicates(fileMap map[string][]fileDetails) []DuplicateFiles {
 	return duplicateFiles
 }
 
-func listFilesInDir(path string)   []fileDetails {
+func listFilesInDir(path string) []fileDetails {
 	files := []fileDetails{}
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -69,8 +68,8 @@ func listFilesInDir(path string)   []fileDetails {
 		fp := filepath.Join(path, e.Name())
 
 		if e.IsDir() {
-			f :=listFilesInDir(fp, )
-			files = append(files, f... )
+			f := listFilesInDir(fp)
+			files = append(files, f...)
 		}
 		if e.Type().IsRegular() {
 			fi, err := os.Stat(fp)
